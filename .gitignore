@@ -13,3 +13,5 @@ build/
 htmlcov/
 
 .DS_Store
+
+.sisyphus/
