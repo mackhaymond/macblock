@@ -454,6 +454,17 @@ def test_run_daemon_applies_once_after_becoming_ready(
         return True
 
     monkeypatch.setattr(daemon, "_wait_for_network_ready", _wait_for_network_ready)
+    network_ready_results = [
+        (False, "no default route", None, None),
+        (True, "", "en0", "192.168.0.2"),
+    ]
+
+    def _network_ready() -> tuple[bool, str, str | None, str | None]:
+        if network_ready_results:
+            return network_ready_results.pop(0)
+        return True, "", "en0", "192.168.0.2"
+
+    monkeypatch.setattr(daemon, "_network_ready", _network_ready)
 
     def _apply_state(*, reason: str = "unknown") -> tuple[bool, list[str]]:
         events.append("apply")
@@ -479,6 +490,45 @@ def test_run_daemon_applies_once_after_becoming_ready(
 
     assert rc == 0
     assert events == ["wait_ready", "wait_change", "wait_ready", "apply"]
+
+
+def test_run_daemon_applies_without_deferring_when_network_recovers_during_gate_timeout(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    _patch_run_daemon_harness(tmp_path, monkeypatch)
+
+    state = _mk_state(enabled=True, resume_at_epoch=None)
+    monkeypatch.setattr(daemon, "load_state", lambda _p: state)
+    monkeypatch.setattr(daemon, "_wait_for_network_ready", lambda _timeout: False)
+    monkeypatch.setattr(
+        daemon,
+        "_network_ready",
+        lambda: (True, "", "en0", "192.168.0.2"),
+    )
+
+    apply_calls = {"count": 0}
+
+    def _apply_state(*, reason: str = "unknown") -> tuple[bool, list[str]]:
+        apply_calls["count"] += 1
+        daemon._shutdown_requested = True
+        return True, []
+
+    monkeypatch.setattr(daemon, "_apply_state", _apply_state)
+    monkeypatch.setattr(
+        daemon,
+        "_wait_for_network_change_or_signal",
+        lambda _timeout: (_ for _ in ()).throw(
+            AssertionError("unexpected defer wait before apply")
+        ),
+    )
+
+    daemon._shutdown_requested = False
+    daemon._trigger_apply = False
+
+    rc = daemon.run_daemon()
+
+    assert rc == 0
+    assert apply_calls["count"] == 1
 
 
 def test_run_daemon_sigusr1_interrupt_ready_rechecks_and_applies(
@@ -584,6 +634,55 @@ def test_run_daemon_sigusr1_state_flip_to_disabled_applies_restore_even_if_unrea
     assert rc == 0
     assert load_calls["count"] >= 2
     assert apply_calls["count"] == 1
+
+
+def test_run_daemon_coalesces_notify_burst_before_single_apply(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    _patch_run_daemon_harness(tmp_path, monkeypatch)
+
+    state = _mk_state(enabled=False, resume_at_epoch=None)
+    monkeypatch.setattr(daemon, "load_state", lambda _p: state)
+
+    apply_reasons: list[str] = []
+
+    def _apply_state(*, reason: str = "unknown") -> tuple[bool, list[str]]:
+        apply_reasons.append(reason)
+        if len(apply_reasons) >= 2:
+            daemon._shutdown_requested = True
+        return True, []
+
+    monkeypatch.setattr(daemon, "_apply_state", _apply_state)
+
+    wait_calls: list[float | None] = []
+    responses = [
+        ("notify", 0),
+        ("notify", 0),
+        ("timeout", None),
+    ]
+
+    def _wait_for_network_change_or_signal(
+        timeout: float | None,
+    ) -> tuple[str, int | None]:
+        wait_calls.append(timeout)
+        if not responses:
+            raise AssertionError("unexpected extra wait")
+        return responses.pop(0)
+
+    monkeypatch.setattr(
+        daemon,
+        "_wait_for_network_change_or_signal",
+        _wait_for_network_change_or_signal,
+    )
+
+    daemon._shutdown_requested = False
+    daemon._trigger_apply = False
+
+    rc = daemon.run_daemon()
+
+    assert rc == 0
+    assert apply_reasons == ["startup", "notify"]
+    assert len(wait_calls) == 3
 
 
 def test_run_daemon_exits_after_consecutive_failures(

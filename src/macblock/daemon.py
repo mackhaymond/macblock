@@ -663,6 +663,38 @@ def _wake_reason_from_wait(wait_reason: str, exit_code: int | None) -> str:
     return wait_reason
 
 
+def _coalesce_notify_wake(wake_reason: str, window_s: float = 1.0) -> str:
+    if wake_reason != "notify":
+        return wake_reason
+
+    deadline = time.time() + window_s
+    while True:
+        if _shutdown_requested:
+            return "shutdown"
+
+        if _consume_trigger_apply():
+            _log("wake: received SIGUSR1 trigger")
+            return "signal"
+
+        remaining = deadline - time.time()
+        if remaining <= 0:
+            return "notify"
+
+        wait_reason, exit_code = _wait_for_network_change_or_signal(remaining)
+
+        if wait_reason == "notify":
+            _log(
+                f"wake: coalesced additional network change notification (exit_code={exit_code})"
+            )
+            deadline = time.time() + window_s
+            continue
+
+        if wait_reason == "timeout":
+            return "notify"
+
+        return _wake_reason_from_wait(wait_reason, exit_code)
+
+
 def _write_pid_file() -> None:
     atomic_write_text(VAR_DB_DAEMON_PID, f"{os.getpid()}\n", mode=0o644)
 
@@ -781,14 +813,19 @@ def run_daemon() -> int:
 
                         _consume_trigger_apply()
                     else:
-                        _ready, not_ready_reason, _interface, _ip = _network_ready()
-                        _log(f"deferring apply: {not_ready_reason}")
+                        ready_now, not_ready_reason, _interface, _ip = _network_ready()
+                        if not ready_now:
+                            _log(f"deferring apply: {not_ready_reason}")
+                            _consume_trigger_apply()
+                            wait_reason, exit_code = _wait_for_network_change_or_signal(
+                                5.0
+                            )
+                            wake_reason = _wake_reason_from_wait(wait_reason, exit_code)
+                            if wake_reason == "shutdown":
+                                break
+                            continue
+
                         _consume_trigger_apply()
-                        wait_reason, exit_code = _wait_for_network_change_or_signal(5.0)
-                        wake_reason = _wake_reason_from_wait(wait_reason, exit_code)
-                        if wake_reason == "shutdown":
-                            break
-                        continue
 
             ready_now, _not_ready_reason, ready_interface, ready_ip = _network_ready()
             if ready_now and ready_interface and ready_ip:
@@ -842,6 +879,7 @@ def run_daemon() -> int:
             _consume_trigger_apply()
             wait_reason, exit_code = _wait_for_network_change_or_signal(timeout)
             wake_reason = _wake_reason_from_wait(wait_reason, exit_code)
+            wake_reason = _coalesce_notify_wake(wake_reason)
 
             if wake_reason == "shutdown":
                 break
