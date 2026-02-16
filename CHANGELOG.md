@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.10](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.10) - 2026-02-16
+
+### Bug Fixes
+
+- fix: defer daemon apply until network is ready
+
+
+### Documentation
+
+- docs: sync upstream fallback documentation
+
 ## [0.2.9](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.9) - 2025-12-31
 
 ### Bug Fixes
