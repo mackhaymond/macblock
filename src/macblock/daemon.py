@@ -68,6 +68,13 @@ def _handle_sigterm(signum: int, frame: object) -> None:
     _shutdown_requested = True
 
 
+def _consume_trigger_apply() -> bool:
+    global _trigger_apply
+    was_triggered = _trigger_apply
+    _trigger_apply = False
+    return was_triggered
+
+
 def _is_forward_ip(ip: str) -> bool:
     if not ip:
         return False
@@ -174,7 +181,7 @@ def _wait_for_network_ready(max_wait_s: float = 15.0) -> bool:
         if elapsed >= max_wait_s:
             if logged_start:
                 print(
-                    f"network not ready after {max_wait_s:.0f}s; applying anyway",
+                    f"network not ready after {max_wait_s:.0f}s; deferring apply",
                     file=sys.stderr,
                 )
             return False
@@ -636,6 +643,26 @@ def _wait_for_network_change_or_signal(
     return reason, exit_code
 
 
+def _wake_reason_from_wait(wait_reason: str, exit_code: int | None) -> str:
+    if wait_reason == "shutdown":
+        return "shutdown"
+
+    if wait_reason == "signal":
+        _log("wake: received SIGUSR1 trigger")
+        return "signal"
+
+    if wait_reason == "notify":
+        _log(f"wake: network change notification (exit_code={exit_code})")
+        return "notify"
+
+    if wait_reason == "timeout":
+        _log("wake: periodic reconcile")
+        return "timeout"
+
+    _log(f"wake: notify watcher fallback ({wait_reason})")
+    return wait_reason
+
+
 def _write_pid_file() -> None:
     atomic_write_text(VAR_DB_DAEMON_PID, f"{os.getpid()}\n", mode=0o644)
 
@@ -697,7 +724,7 @@ def run_daemon() -> int:
 
     try:
         while not _shutdown_requested:
-            _trigger_apply = False
+            _consume_trigger_apply()
 
             try:
                 state_for_wait = load_state(SYSTEM_STATE_FILE)
@@ -713,7 +740,59 @@ def run_daemon() -> int:
                 )
 
             if _should_wait_for_network_before_apply(state_for_wait):
-                _wait_for_network_ready(15.0)
+                ready_for_apply = _wait_for_network_ready(15.0)
+                if not ready_for_apply:
+                    if _shutdown_requested:
+                        wake_reason = "shutdown"
+                        break
+
+                    triggered_during_gate = _consume_trigger_apply()
+
+                    if triggered_during_gate:
+                        try:
+                            state_for_wait = load_state(SYSTEM_STATE_FILE)
+                        except MacblockError as e:
+                            _log(f"failed to load state for network wait: {e}")
+                            state_for_wait = State(
+                                schema_version=2,
+                                enabled=False,
+                                resume_at_epoch=None,
+                                blocklist_source=None,
+                                dns_backup={},
+                                managed_services=[],
+                            )
+
+                        if _should_wait_for_network_before_apply(state_for_wait):
+                            ready_now, not_ready_reason, _interface, _ip = (
+                                _network_ready()
+                            )
+                            if not ready_now:
+                                _log(f"deferring apply: {not_ready_reason}")
+                                _consume_trigger_apply()
+                                wait_reason, exit_code = (
+                                    _wait_for_network_change_or_signal(5.0)
+                                )
+                                wake_reason = _wake_reason_from_wait(
+                                    wait_reason, exit_code
+                                )
+                                if wake_reason == "shutdown":
+                                    break
+                                continue
+
+                        _consume_trigger_apply()
+                    else:
+                        _ready, not_ready_reason, _interface, _ip = _network_ready()
+                        _log(f"deferring apply: {not_ready_reason}")
+                        _consume_trigger_apply()
+                        wait_reason, exit_code = _wait_for_network_change_or_signal(5.0)
+                        wake_reason = _wake_reason_from_wait(wait_reason, exit_code)
+                        if wake_reason == "shutdown":
+                            break
+                        continue
+
+            ready_now, _not_ready_reason, ready_interface, ready_ip = _network_ready()
+            if ready_now and ready_interface and ready_ip:
+                _log(f"network ready for apply: {ready_interface} {ready_ip}")
 
             try:
                 success, issues = _apply_state(reason=wake_reason)
@@ -760,22 +839,9 @@ def run_daemon() -> int:
                 timeout = 60.0
 
             _log(f"waiting for network changes (timeout={timeout:.0f}s)")
+            _consume_trigger_apply()
             wait_reason, exit_code = _wait_for_network_change_or_signal(timeout)
-
-            if wait_reason == "shutdown":
-                wake_reason = "shutdown"
-            elif wait_reason == "signal":
-                _log("wake: received SIGUSR1 trigger")
-                wake_reason = "signal"
-            elif wait_reason == "notify":
-                _log(f"wake: network change notification (exit_code={exit_code})")
-                wake_reason = "notify"
-            elif wait_reason == "timeout":
-                _log("wake: periodic reconcile")
-                wake_reason = "timeout"
-            else:
-                _log(f"wake: notify watcher fallback ({wait_reason})")
-                wake_reason = wait_reason
+            wake_reason = _wake_reason_from_wait(wait_reason, exit_code)
 
             if wake_reason == "shutdown":
                 break
