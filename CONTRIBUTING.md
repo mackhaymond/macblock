@@ -12,7 +12,7 @@ Optional but recommended:
 ## Setup
 
 ```bash
-git clone https://github.com/SpyicyDev/macblock.git
+git clone https://github.com/mackhaymond/macblock.git
 cd macblock
 
 # Optional: automatically sync deps + set env vars

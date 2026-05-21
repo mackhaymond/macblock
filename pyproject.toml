@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "SpyicyDev" }]
+authors = [{ name = "mackhaymond" }]
 keywords = ["dns", "ad-blocker", "dnsmasq", "macos"]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -28,10 +28,10 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/SpyicyDev/macblock"
-Repository = "https://github.com/SpyicyDev/macblock"
-Issues = "https://github.com/SpyicyDev/macblock/issues"
-Changelog = "https://github.com/SpyicyDev/macblock/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/mackhaymond/macblock"
+Repository = "https://github.com/mackhaymond/macblock"
+Issues = "https://github.com/mackhaymond/macblock/issues"
+Changelog = "https://github.com/mackhaymond/macblock/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

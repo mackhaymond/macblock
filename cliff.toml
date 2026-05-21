@@ -5,7 +5,7 @@ header = """
 """
 body = """
 {%- macro remote_url() -%}
-  https://github.com/SpyicyDev/macblock
+  https://github.com/mackhaymond/macblock
 {%- endmacro -%}
 
 {% if version %}\

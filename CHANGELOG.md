@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.10](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.10) - 2026-02-16
+## [0.2.10](https://github.com/mackhaymond/macblock/releases/tag/v0.2.10) - 2026-02-16
 
 ### Bug Fixes
 
@@ -11,7 +11,7 @@
 
 - docs: sync upstream fallback documentation
 
-## [0.2.9](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.9) - 2025-12-31
+## [0.2.9](https://github.com/mackhaymond/macblock/releases/tag/v0.2.9) - 2025-12-31
 
 ### Bug Fixes
 
@@ -96,7 +96,7 @@
 
 - test(blocklists): cover sha mismatch without state drift
 
-## [0.2.8](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.8) - 2025-12-28
+## [0.2.8](https://github.com/mackhaymond/macblock/releases/tag/v0.2.8) - 2025-12-28
 
 ### Documentation
 
@@ -107,25 +107,25 @@
 
 - feat(upstreams): configure fallback DNS and show upstreams
 
-## [0.2.7](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.7) - 2025-12-27
+## [0.2.7](https://github.com/mackhaymond/macblock/releases/tag/v0.2.7) - 2025-12-27
 
 ### Bug Fixes
 
 - fix(daemon): wake on network_change notifications
 
-## [0.2.6](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.6) - 2025-12-27
+## [0.2.6](https://github.com/mackhaymond/macblock/releases/tag/v0.2.6) - 2025-12-27
 
 ### Bug Fixes
 
 - fix(daemon): improve logging and reconciliation
 
-## [0.2.5](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.5) - 2025-12-27
+## [0.2.5](https://github.com/mackhaymond/macblock/releases/tag/v0.2.5) - 2025-12-27
 
 ### Bug Fixes
 
 - fix(system_dns): resolve service device mapping
 
-## [0.2.4](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.4) - 2025-12-27
+## [0.2.4](https://github.com/mackhaymond/macblock/releases/tag/v0.2.4) - 2025-12-27
 
 ### Miscellaneous
 
@@ -133,7 +133,7 @@
 
 - chore(logging): unify dnsmasq logs under /Library/Logs
 
-## [0.2.3](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.3) - 2025-12-26
+## [0.2.3](https://github.com/mackhaymond/macblock/releases/tag/v0.2.3) - 2025-12-26
 
 ### Bug Fixes
 
@@ -144,7 +144,7 @@
 
 - Elaborated in README
 
-## [0.2.2](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.2) - 2025-12-25
+## [0.2.2](https://github.com/mackhaymond/macblock/releases/tag/v0.2.2) - 2025-12-25
 
 ### Bug Fixes
 
@@ -174,7 +174,7 @@
 
 - Potential fix for code scanning alert no. 1: Workflow does not contain permissions
 
-## [0.2.1](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.1) - 2025-12-24
+## [0.2.1](https://github.com/mackhaymond/macblock/releases/tag/v0.2.1) - 2025-12-24
 
 ### Bug Fixes
 
@@ -192,7 +192,7 @@
 
 - Overhaul status/doctor output with Rich tables
 
-## [0.2.0](https://github.com/SpyicyDev/macblock/releases/tag/v0.2.0) - 2025-12-23
+## [0.2.0](https://github.com/mackhaymond/macblock/releases/tag/v0.2.0) - 2025-12-23
 
 ### Bug Fixes
 

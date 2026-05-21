@@ -104,7 +104,7 @@ jobs:
         with:
           formula-name: macblock
           formula-path: Formula/macblock.rb
-          homebrew-tap: SpyicyDev/homebrew-formulae
+          homebrew-tap: mackhaymond/homebrew-formulae
           commit-message: |
             macblock ${{ github.ref_name }}
 

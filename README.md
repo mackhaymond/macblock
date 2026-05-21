@@ -1,6 +1,6 @@
 # macblock
 
-[![CI](https://github.com/SpyicyDev/macblock/actions/workflows/ci.yml/badge.svg)](https://github.com/SpyicyDev/macblock/actions/workflows/ci.yml)
+[![CI](https://github.com/mackhaymond/macblock/actions/workflows/ci.yml/badge.svg)](https://github.com/mackhaymond/macblock/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/macblock.svg)](https://pypi.org/project/macblock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -28,13 +28,13 @@ Most of this project was vibe-coded with careful code review and analysis of wha
 ### Via Homebrew (recommended)
 
 ```bash
-brew install SpyicyDev/formulae/macblock
+brew install mackhaymond/formulae/macblock
 ```
 
 Or, if you prefer adding the tap explicitly:
 
 ```bash
-brew tap SpyicyDev/formulae
+brew tap mackhaymond/formulae
 brew install macblock
 ```
 
